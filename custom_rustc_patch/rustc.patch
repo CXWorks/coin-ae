@@ -1,0 +1,165 @@
+diff --git a/compiler/rustc_mir_build/src/check_unsafety.rs b/compiler/rustc_mir_build/src/check_unsafety.rs
+index 8512763a595..904a59e5633 100644
+--- a/compiler/rustc_mir_build/src/check_unsafety.rs
++++ b/compiler/rustc_mir_build/src/check_unsafety.rs
+@@ -17,6 +17,8 @@
+ use rustc_span::def_id::{DefId, LocalDefId};
+ use rustc_span::symbol::Symbol;
+ use rustc_span::{Span, sym};
++use std::{env};
++use rustc_span::FileNameDisplayPreference;
+ 
+ use crate::build::ExprCategory;
+ use crate::errors::*;
+@@ -44,6 +46,7 @@ struct UnsafetyVisitor<'a, 'tcx> {
+     /// Flag to ensure that we only suggest wrapping the entire function body in
+     /// an unsafe block once.
+     suggest_unsafe_block: bool,
++    has_unsafe: bool
+ }
+ 
+ impl<'tcx> UnsafetyVisitor<'_, 'tcx> {
+@@ -58,6 +61,28 @@ fn in_safety_context(&mut self, safety_context: SafetyContext, f: impl FnOnce(&m
+         {
+             if !used {
+                 self.warn_unused_unsafe(hir_id, span, None);
++                if env::var("SHOW_UNSAFE").is_ok() {
++                    let res = self.tcx.sess.source_map().span_to_lines(span);
++                    if let Ok(fl) = res {
++                        let mut file_path = self.tcx
++                            .sess
++                            .source_map()
++                            .span_to_filename(span)
++                            .display(FileNameDisplayPreference::Remapped)
++                            .to_string();
++                        if !file_path.starts_with("/") {
++                            file_path = std::path::Path::new(&file_path).canonicalize().expect("err").to_str().expect("err").parse().unwrap();
++                        }
++                        println!(
++                            "find_unused_unsafe_at {} {}",
++                            file_path,
++                            fl.lines.len()
++                        );
++                        for l in fl.lines {
++                            println!("\t{} {} {} {}", l.line_index, l.start_col.0, l.end_col.0, 1);
++                        }
++                    }
++                }
+ 
+                 if let SafetyContext::UnsafeBlock {
+                     nested_used_blocks: ref mut prev_nested_used_blocks,
+@@ -75,6 +100,28 @@ fn in_safety_context(&mut self, safety_context: SafetyContext, f: impl FnOnce(&m
+                             span: self.tcx.sess.source_map().guess_head_span(span),
+                         }),
+                     );
++                    if env::var("SHOW_UNSAFE").is_ok() {
++                        let res = self.tcx.sess.source_map().span_to_lines(block.span);
++                        if let Ok(fl) = res {
++                            let mut file_path = self.tcx
++                                .sess
++                                .source_map()
++                                .span_to_filename(block.span)
++                                .display(FileNameDisplayPreference::Remapped)
++                                .to_string();
++                            if !file_path.starts_with("/") {
++                                file_path = std::path::Path::new(&file_path).canonicalize().expect("err").to_str().expect("err").parse().unwrap();
++                            }
++                            println!(
++                                "find_unused_unsafe_at {} {}",
++                                file_path,
++                                fl.lines.len()
++                            );
++                            for l in fl.lines {
++                                println!("\t{} {} {} {}", l.line_index, l.start_col.0, l.end_col.0, 1);
++                            }
++                        }
++                    }
+                 }
+ 
+                 match self.safety_context {
+@@ -146,6 +193,7 @@ fn emit_deprecated_safe_fn_call(&self, span: Span, kind: &UnsafeOpKind) -> bool
+ 
+     fn requires_unsafe(&mut self, span: Span, kind: UnsafeOpKind) {
+         let unsafe_op_in_unsafe_fn_allowed = self.unsafe_op_in_unsafe_fn_allowed();
++        self.has_unsafe = true;
+         match self.safety_context {
+             SafetyContext::BuiltinUnsafeBlock => {}
+             SafetyContext::UnsafeBlock { ref mut used, .. } => {
+@@ -217,6 +265,7 @@ fn visit_inner_body(&mut self, def: LocalDefId) {
+                 inside_adt: false,
+                 warnings: self.warnings,
+                 suggest_unsafe_block: self.suggest_unsafe_block,
++                has_unsafe: false
+             };
+             // params in THIR may be unsafe, e.g. a union pattern.
+             for param in &inner_thir.params {
+@@ -1026,6 +1075,13 @@ pub(crate) fn check_unsafety(tcx: TyCtxt<'_>, def: LocalDefId) {
+             SafetyContext::Safe
+         }
+     });
++    let my_safety_context = tcx.hir().fn_sig_by_hir_id(hir_id).map_or(SafetyContext::Safe, |fn_sig| {
++        if fn_sig.header.safety == hir::Safety::Unsafe {
++            SafetyContext::UnsafeFn
++        } else {
++            SafetyContext::Safe
++        }
++    });
+     let body_target_features = &tcx.body_codegen_attrs(def.to_def_id()).target_features;
+     let mut warnings = Vec::new();
+     let mut visitor = UnsafetyVisitor {
+@@ -1040,6 +1096,7 @@ pub(crate) fn check_unsafety(tcx: TyCtxt<'_>, def: LocalDefId) {
+         inside_adt: false,
+         warnings: &mut warnings,
+         suggest_unsafe_block: true,
++        has_unsafe: false
+     };
+     // params in THIR may be unsafe, e.g. a union pattern.
+     for param in &thir.params {
+@@ -1049,7 +1106,7 @@ pub(crate) fn check_unsafety(tcx: TyCtxt<'_>, def: LocalDefId) {
+     }
+     // Visit the body.
+     visitor.visit_expr(&thir[expr]);
+-
++    let final_has_unsafe: bool = (visitor.has_unsafe).clone();
+     warnings.sort_by_key(|w| w.block_span);
+     for UnusedUnsafeWarning { hir_id, block_span, enclosing_unsafe } in warnings {
+         let block_span = tcx.sess.source_map().guess_head_span(block_span);
+@@ -1058,4 +1115,38 @@ pub(crate) fn check_unsafety(tcx: TyCtxt<'_>, def: LocalDefId) {
+             enclosing: enclosing_unsafe,
+         });
+     }
++    //let final_has_unsafe: bool = (visitor.has_unsafe).clone();
++    if env::var("SHOW_UNSAFE").is_ok() {
++        match my_safety_context {
++
++
++        SafetyContext::UnsafeFn => {
++        if !final_has_unsafe{
++            let fn_span = tcx.source_span(def);
++            let res = tcx.sess.source_map().span_to_lines(fn_span);
++            if let Ok(fl) = res {
++                        let mut file_path = tcx
++                            .sess
++                            .source_map()
++                            .span_to_filename(fn_span)
++                            .display(FileNameDisplayPreference::Remapped)
++                            .to_string();
++                        if !file_path.starts_with("/") {
++                            file_path = std::path::Path::new(&file_path).canonicalize().expect("err").to_str().expect("err").parse().unwrap();
++                        }
++                        println!(
++                            "find_unused_unsafe_at {} {}",
++                            file_path,
++                            fl.lines.len()
++                        );
++                        for l in fl.lines {
++                            println!("\t{} {} {} {}", l.line_index, l.start_col.0, l.end_col.0, 1);
++                        }
++            }
++        }
++        }
++        _ => {}
++        }
++    }
+ }
++
