@@ -47,8 +47,8 @@ def run_llm(client: OpenAI, model, examples, target_text, best):
 
 def build_client():
     gpt4o = openai.OpenAI(
-        api_key='sk-w7weiFTL6mzJrr3P4S3wEA',
-        base_url="https://litellm-proxy-153298433405.us-east1.run.app/"
+        api_key=os.environ["OPENAI_API_KEY"],
+        base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     )
     return gpt4o
 

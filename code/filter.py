@@ -8,8 +8,10 @@ import pandas
 from pydantic import BaseModel
 
 def build_client():
-    KEY = 'sk-w7weiFTL6mzJrr3P4S3wEA'
-    client = openai.OpenAI(api_key=KEY, base_url="https://litellm-proxy-153298433405.us-east1.run.app/")
+    client = openai.OpenAI(
+        api_key=os.environ["OPENAI_API_KEY"],
+        base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    )
     return client
 
 
