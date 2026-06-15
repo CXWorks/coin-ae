@@ -1,4 +1,4 @@
-# Coin — Artifact for CCS 2026 Paper #1938
+# Coin — Artifact
 
 **The Illusion of Rust Safety: Detecting Modular Unsafe Functions with LLMs**
 
@@ -57,8 +57,7 @@ bash scripts/1_smoke_test.sh /path/to/coin_test.pkl
 
 The classifier evaluation requires **unsloth 2025.2.15** exactly. Newer
 versions silently truncate sequences and degrade AUPRC from ~0.76 to ~0.32.
-The setup script pins this; do not upgrade. See
-[ARTIFACT_EVALUATION.md §Why versions matter](ARTIFACT_EVALUATION.md).
+The setup script pins this; do not upgrade. 
 
 ## Datasets
 
