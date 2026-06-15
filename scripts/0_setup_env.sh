@@ -19,6 +19,9 @@ echo "Installing pinned unsloth + transformers + peft + trl..."
 "$ENV_PATH/bin/pip" install --no-deps \
     "tokenizers==0.21.0" scikit-learn matplotlib numpy tqdm rich
 
+echo "Installing API baseline drivers (E4)..."
+"$ENV_PATH/bin/pip" install "openai>=1.30" "anthropic>=0.30" "bitsandbytes>=0.43"
+
 echo
 echo "Verifying installation:"
 "$ENV_PATH/bin/python" -c "import unsloth; print('unsloth:', unsloth.__version__)"

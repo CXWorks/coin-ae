@@ -2,42 +2,47 @@
 
 **The Illusion of Rust Safety: Detecting Modular Unsafe Functions with LLMs**
 
-This artifact reproduces the two main results of the paper:
+This artifact reproduces the main results of the paper:
 
 | Claim | Artifact | Reproduction step |
 |-------|----------|--------|
 | **C1** — Llama 3.2 3B classifier achieves AUPRC ≈ 0.82 on MUF detection | `model/llama3.2/` | E1 (smoke test) + E2 (full eval) |
 | **C2** — PoC generator produces valid PoCs for 19/22 in-the-wild MUF bugs | `model/llama3.2_poc/` | E3 (PoC eval) |
+| **C3** — Coin outperforms vanilla open-source LLMs and GPT-4o / Claude-3.7 | `code/eval_open_baseline.py`, `code/eval_api_baseline.py` | E4 (baselines) |
 
 See [ARTIFACT_EVALUATION.md](ARTIFACT_EVALUATION.md) for full step-by-step instructions.
 
 ## Layout
 
 ```
-coin-ae-final/
+coin-ae/
 ├── ARTIFACT_EVALUATION.md       # Detailed AE instructions (this is the main doc)
 ├── coin-ae-appendix.tex         # LaTeX appendix for the AE submission
 ├── code/
 │   ├── eval_repro.py            # E1/E2: classifier evaluation (Llama 3.2 3B)
+│   ├── gen_poc.py               # E3: PoC generator inference + evaluation
+│   ├── eval_open_baseline.py    # E4a: vanilla open-source LLM baselines
+│   ├── eval_api_baseline.py     # E4b: GPT-4o / Claude-3.7 driver (few-shot + Best-of-K)
 │   ├── infer_batch.py           # Reusability: run classifier on a new crate
 │   ├── train_poc_generator.py   # Optional: re-train the PoC generator LoRA
-│   ├── gen_poc.py               # E3: PoC generator inference + evaluation
 │   ├── threshold.py             # PAC-based threshold calibration
-│   ├── llm_final.py             # Baseline: GPT-4o / Claude-3.7 few-shot
+│   ├── llm_final.py             # Legacy single-file GPT-4o probe (kept for reference)
 │   └── unsafe_collect.py        # Utility: collect MUF candidates from a crate
 ├── model/
 │   ├── llama3.2/                # Fine-tuned classifier LoRA (Llama 3.2 3B base)
 │   ├── llama3.2_poc/            # Fine-tuned PoC generator LoRA
 │   └── reassemble.sh            # Concatenate the .part_* files; run once
 ├── data/
-│   └── coin_test.pkl.sample.*   # Reassemblable sample test split
+│   ├── coin_test.pkl.sample.*   # Reassemblable sample test split
+│   └── shots.jsonl              # Sample few-shot examples for E4b
 ├── prompts/                     # Prompt templates used during training/inference
 ├── custom_rustc_patch/          # rustc 1.83.0-dev patch for safe-candidate extraction
 └── scripts/
     ├── 0_setup_env.sh           # Conda env with the pinned package versions
     ├── 1_smoke_test.sh          # E1: 8K-sample classifier smoke test (~20 min)
     ├── 2_full_eval.sh           # E2: full 319K classifier eval (~2.5 h on 4 GPUs)
-    └── 3_poc_eval.sh            # E3: PoC generator evaluation
+    ├── 3_poc_eval.sh            # E3: PoC generator evaluation
+    └── 4_baseline_eval.sh       # E4: open-source + API baselines
 ```
 
 ## Quick start

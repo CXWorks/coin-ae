@@ -1,0 +1,5 @@
+{"category": "logical memory controls", "label": 1, "function_text": "pub fn set_len(&mut self, new_len: usize) {\n>\tself.len = new_len;\n}"}
+{"category": "ffi", "label": 1, "function_text": "pub fn from_raw(ptr: *mut u8, len: usize) -> Vec<u8> {\n>\tVec::from_raw_parts(ptr, len, len)\n}"}
+{"category": "sharing status", "label": 1, "function_text": "pub fn get(&self) -> &T {\n>\tunsafe { &*self.inner.get() }\n}"}
+{"category": "logical requirement", "label": 0, "function_text": "pub fn checked_add(a: u32, b: u32) -> Option<u32> {\n>\ta.checked_add(b)\n}"}
+{"category": "logical requirement", "label": 0, "function_text": "pub fn double(x: i64) -> i64 {\n>\tx.saturating_mul(2)\n}"}

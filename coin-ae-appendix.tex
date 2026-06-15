@@ -29,18 +29,23 @@
 
 \subsection{Abstract}
 
-This artifact reproduces the two main results of \textsc{Coin}, a Modular
+This artifact reproduces the main results of \textsc{Coin}, a Modular
 Unsafe Function (MUF) detector and PoC generator for Rust:
 (C1)~the fine-tuned Llama~3.2-3B classifier achieves AUPRC\,$\approx$\,0.82
-on MUF detection, and (C2)~the fine-tuned PoC generator produces valid
-PoCs for Modular Unsafe Functions detected in real-world crates.
+on MUF detection;
+(C2)~the fine-tuned PoC generator produces valid PoCs for Modular Unsafe
+Functions detected in real-world crates;
+and (C3)~\textsc{Coin} substantially outperforms both vanilla open-source
+LLMs (Llama 3.2 3B, Llama 3.1 8B, Qwen3 4B) and closed-source GPT-4o /
+Claude-3.7 with few-shot prompting.
 The artifact ships:
 (i)~the Llama~3.2-3B LoRA \emph{classifier adapter} ($\approx$93\,MB),
 (ii)~the Llama~3.2-3B LoRA \emph{PoC generator adapter},
-(iii)~self-contained evaluation scripts in \texttt{code/},
-(iv)~four convenience launchers in \texttt{scripts/} (environment setup,
-smoke test, full evaluation, PoC evaluation), and
-(v)~a reassemblable sample test split for quick functional checks.
+(iii)~self-contained evaluation scripts in \texttt{code/} including
+baseline drivers for open-source models and OpenAI/Anthropic APIs,
+(iv)~five convenience launchers in \texttt{scripts/} (env setup,
+smoke test, full eval, PoC eval, baseline comparison), and
+(v)~a reassemblable sample test split and a starter few-shot file.
 Both adapters load on top of \texttt{unsloth/Llama-3.2-3B-bnb-4bit} from
 HuggingFace.
 The code is released under the MIT license; model weights follow the
@@ -168,6 +173,14 @@ set \texttt{LD\_LIBRARY\_PATH} correctly --- prefer those.
   were submitted to developers and contributed to 14 confirmed bugs
   and 10 CVE assignments.
   Proven by experiment (E3); results reported in Table~4.
+
+\item[(C3):]
+  \textsc{Coin} substantially outperforms vanilla open-source LLMs
+  (Llama~3.2 3B, Llama~3.1 8B, Qwen3 4B; AUPRC\,$\approx$\,0.02--0.03)
+  and closed-source GPT-4o / Claude-3.7 even with few-shot context
+  and Best-of-K querying (precision on the unsafe class never exceeds
+  $\approx$7\%).
+  Proven by experiment (E4); results reported in Figure~2 and Tables~2--3.
 \end{compactitem}
 
 \subsubsection{Experiments}
@@ -255,6 +268,55 @@ bash scripts/3_poc_eval.sh \
         \texttt{/tmp/poc\_eval.json}. The fine-tuned model generates
         valid PoC skeletons for the majority of test examples,
         consistent with the 19/22 success rate in Table~4.
+  \end{asparadesc}
+
+\item[(E4):]
+  \textbf{Baseline comparison}
+  [15 person-minutes + 2 compute-hours + a few US\$ in API credits + 30\,GB
+  disk]: Reproduce the comparison against vanilla open-source LLMs
+  (paper Fig.~2) and closed-source GPT-4o / Claude-3.7 (paper
+  Tables~2--3), supporting (C3).
+
+  \begin{asparadesc}
+  \item[Preparation:] Export the API keys you have available
+        (\texttt{OPENAI\_API\_KEY}, \texttt{ANTHROPIC\_API\_KEY}); the
+        launcher skips a provider whose key is missing. Llama models
+        on HuggingFace are gated --- set \texttt{HF\_TOKEN} or run
+        \texttt{huggingface-cli login} once. The provided
+        \texttt{data/shots.jsonl} contains five labeled examples for
+        zero-friction few-shot runs; larger shot files follow the
+        format documented at the top of \texttt{eval\_api\_baseline.py}.
+  \item[Execution:]
+\begin{verbatim}
+bash scripts/4_baseline_eval.sh \
+  /path/to/coin_test.pkl
+\end{verbatim}
+        Or one configuration directly:
+\begin{verbatim}
+# Open-source: Llama 3.2 3B vanilla
+./env/bin/python \
+  code/eval_open_baseline.py \
+  --model meta-llama/Llama-3.2-3B-Instruct \
+  --data /path/to/coin_test.pkl \
+  --n 8000 --output /tmp/open_llama32.json
+# API: GPT-4o, N=3 few-shot, Best@1
+./env/bin/python \
+  code/eval_api_baseline.py \
+  --provider openai --model gpt-4o \
+  --data /path/to/coin_test.pkl --n 200 \
+  --shots_file data/shots.jsonl --shots_n 3 \
+  --best_of 1 --output /tmp/gpt4o_n3.json
+\end{verbatim}
+        The launcher iterates N\,$\in\,\{0,1,3,5\}$ (Table~2) and N=1
+        with K\,$\in\,\{3,5\}$ (Table~3) for each provider.
+  \item[Results:] Per-config JSON files in \texttt{/tmp/coin\_baselines/}.
+        Expected: vanilla open-source AUPRC $\approx$ 0.02--0.03
+        (Fig.~2); GPT-4o precision/recall on the unsafe class
+        $\approx$\,4--5\,\% / 21\,\%; Claude-3.7 precision/recall
+        $\approx$\,4--7\,\% / 7--12\,\%, matching the order of
+        magnitude in Tables~2--3. Coin's reproduced
+        precision/recall = 63.7\,\% / 80.4\,\% (E2) is one to two
+        orders of magnitude better.
   \end{asparadesc}
 
 \end{compactitem}

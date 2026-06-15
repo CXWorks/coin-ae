@@ -4,18 +4,19 @@
 
 **Estimated time:**
 - Kick-the-tires: **~20 min** (E1, one A100-80GB)
-- Full reproduction: **~2.5 h** on 4 GPUs (E2) + **~1 h** PoC eval (E3)
+- Full reproduction: **~2.5 h** on 4 GPUs (E2) + **~1 h** PoC eval (E3) + **~2 h** baselines (E4)
 
 ---
 
 ## Overview
 
-This artifact reproduces the two main claims of the paper:
+This artifact reproduces the main claims of the paper:
 
 | Claim | Result | Experiment |
 |------|--------|------------|
 | **C1** Fine-tuned Llama 3.2 3B classifier achieves AUPRC ≈ 0.82 on MUF detection (paper Fig. 2 / Table 2) | AUPRC ≈ 0.764 on the fixed split (≈0.82 on natural distribution) | E1 + E2 |
 | **C2** Fine-tuned PoC generator produces valid PoCs demonstrating the root causes of MUFs (paper Table 4: 19/22 in-the-wild cases) | safe-caller / compile / Miri-UB metrics on held-out PoC test set | E3 |
+| **C3** Coin substantially outperforms vanilla open-source LLMs (Llama 3.2 3B / 3.1 8B / Qwen3 4B; paper Fig. 2) and GPT-4o / Claude-3.7 even with few-shot context (paper Tables 2–3) | AUPRC ≈ 0.02–0.03 for vanilla open-source; precision (unsafe) ≤ 7 % for API models | E4 |
 
 The artifact contains:
 - Fine-tuned **Llama 3.2 3B classifier LoRA** at `model/llama3.2/`
@@ -212,6 +213,106 @@ to fine-tune a Llama 3.2 3B LoRA for ~20 epochs.
 ```
 
 Produces an explanation + `Cargo.toml` + `src/main.rs` PoC.
+
+---
+
+## E4: Baseline Comparison (~2 h)
+
+Reproduces the comparison against vanilla open-source LLMs (paper Fig. 2)
+and closed-source GPT-4o / Claude-3.7 (paper Tables 2–3). Supports claim (C3).
+
+### 4.1 Open-source baselines (Llama 3.2 3B / 3.1 8B / Qwen3 4B)
+
+`code/eval_open_baseline.py` loads each vanilla model via standard
+HuggingFace `transformers` (no unsloth, no LoRA), runs a single forward
+pass for each test prompt, and extracts the logits of the
+`"Yes"` and `"No"` tokens to compute an unsafe probability — directly
+comparable to the Coin classifier's AUPRC.
+
+```bash
+bash scripts/4_baseline_eval.sh /path/to/coin_test.pkl open
+```
+
+Or one model at a time:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 \
+LD_LIBRARY_PATH=./env/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH \
+  ./env/bin/python code/eval_open_baseline.py \
+  --model meta-llama/Llama-3.2-3B-Instruct \
+  --data /path/to/coin_test.pkl \
+  --n 8000 \
+  --output /tmp/baseline_llama32.json
+```
+
+Llama models are gated on HuggingFace — set `HF_TOKEN` or run
+`huggingface-cli login` once.
+
+**Expected results (paper Fig. 2; 8K stratified sample):**
+
+| Model | AUPRC | Paper AUPRC |
+|-------|-------|-------------|
+| Llama 3.2 3B (vanilla) | ~0.02 | 0.021 |
+| Llama 3.1 8B (vanilla) | ~0.02 | 0.019 |
+| Qwen3 4B (vanilla) | ~0.03 | 0.030 |
+| **Coin (Llama 3.2 3B, fine-tuned)** | **~0.75** (E1) | 0.822 |
+
+### 4.2 Closed-source API drivers (GPT-4o / Claude-3.7)
+
+`code/eval_api_baseline.py` is a provider-agnostic driver supporting
+both OpenAI and Anthropic. Few-shot prompts (Table 2) and Best-of-K
+queries (Table 3) are controlled by command-line flags.
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+
+bash scripts/4_baseline_eval.sh /path/to/coin_test.pkl api
+```
+
+The launcher iterates over the configurations in the paper:
+N ∈ {0, 1, 3, 5} few-shot for Best@1 (Table 2), and N=1 with K ∈ {3, 5}
+Best-of-K (Table 3). Each configuration runs against ~200 stratified
+test examples (override with `N_API=...`) to control API cost.
+
+For one configuration directly:
+
+```bash
+./env/bin/python code/eval_api_baseline.py \
+  --provider openai --model gpt-4o \
+  --data /path/to/coin_test.pkl \
+  --n 200 \
+  --shots_file data/shots.jsonl --shots_n 3 \
+  --best_of 1 \
+  --output /tmp/gpt4o_n3.json
+```
+
+**Few-shot examples:** `data/shots.jsonl` contains a tiny sample
+(5 labeled examples) to make the script runnable out of the box.
+The paper's experiments used examples drawn from `D_muf`; you can
+generate a larger shots file by writing one JSON object per line in
+the format documented at the top of `eval_api_baseline.py`.
+
+**Expected results (paper Tables 2–3; ~200 samples; precision/recall on
+the unsafe class):**
+
+| Model | N (shots) | Best of K | Precision | Recall | Paper |
+|-------|-----------|-----------|-----------|--------|-------|
+| GPT-4o | 1 | 1 | ~5 % | ~21 % | 4.6 % / 21.4 % |
+| GPT-4o | 3 | 1 | ~4 % | ~21 % | 3.7 % / 21.4 % |
+| GPT-4o | 5 | 1 | ~4 % | ~21 % | 3.9 % / 21.4 % |
+| Claude-3.7 | 1 | 1 | ~4 % | ~7 % | 4.2 % / 7.1 % |
+| Claude-3.7 | 3 | 1 | ~7 % | ~12 % | 6.5 % / 11.9 % |
+| Claude-3.7 | 5 | 1 | ~7 % | ~12 % | 6.9 % / 11.9 % |
+| **Coin** | — | — | **63.7 %** | **80.4 %** | **63.71 % / 80.42 %** |
+
+Numbers will fluctuate slightly with the stratified-200 sample and API
+non-determinism but should remain in the same low range — the point of
+the comparison is the order-of-magnitude precision gap vs. Coin.
+
+> **API cost note:** A full GPT-4o + Claude-3.7 sweep of all eight
+> configurations × ~200 examples is roughly 3,200 API calls; budget
+> a few US dollars per provider. Reduce `N_API` if needed.
 
 ---
 
