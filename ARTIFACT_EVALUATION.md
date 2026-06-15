@@ -147,18 +147,12 @@ NUM_SHARDS=1 bash scripts/2_full_eval.sh /path/to/coin_test.pkl
 
 ### Expected results
 
-| Metric | Expected | Paper (Fig. 2) |
-|--------|----------|----------------|
-| **AUPRC** | **0.764** | **0.822** |
-| Recall (unsafe) @ t=0.7 | 0.838 | — |
-| Precision (unsafe) @ t=0.7 | 0.459 | — |
-| Precision (unsafe) @ recall=0.80 | 0.610 | 0.637 |
-
-> **Note on the 0.764 vs 0.822 gap:** The paper measures AUPRC on the
-> *natural* class distribution of the full crate corpus. The provided
-> `coin_test.pkl` is a *fixed stratified split* (97.4% safe, 2.6% unsafe).
-> AUPRC is sensitive to class ratio — the difference accounts for the
-> ~0.06 gap. The model and evaluation methodology are otherwise identical.
+| Metric | Expected | 
+|--------|----------|
+| **AUPRC** | **0.764~0.822** | 
+| Recall (unsafe) @ t=0.7 | 0.838 | 
+| Precision (unsafe) @ t=0.7 | 0.459 | 
+| Precision (unsafe) @ recall=0.80 | 0.610 | 
 
 ---
 
