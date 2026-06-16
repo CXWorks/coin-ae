@@ -75,5 +75,9 @@ provided separately via the AE submission system due to size.
 - Code: MIT
 - `model/llama3.2/` and `model/llama3.2_poc/`: Llama 3.2 Community License
   (LoRA adapters on top of `unsloth/Llama-3.2-3B-bnb-4bit`)
-- Anonymous artifact repository:
-  <https://anonymous.4open.science/r/coin-ae-E308>
+
+## Citation / Archive
+
+- GitHub: <https://github.com/CXWorks/coin-ae>
+- Zenodo (archived release): <https://doi.org/10.5281/zenodo.20709620>
+- Anonymous mirror: <https://anonymous.4open.science/r/coin-ae-E308>
