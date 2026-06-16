@@ -3,18 +3,14 @@
 
 \usepackage{paralist}
 
+% Suppress the front-matter blocks that ship with the acmart template.
+% The artifact appendix is meant to be appended to the main paper,
+% so it carries no title page, authors, or abstract of its own.
+\settopmatter{printacmref=false, printccs=false, printfolios=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+
 \begin{document}
-
-\title{The Illusion of Rust Safety: Detecting Modular Unsafe Functions with LLMs}
-
-\author{Anonymous Author(s)}
-\affiliation{%
-  \institution{Anonymous Institution}
-  \country{Anonymous Country}
-}
-\email{anonymous@anonymous.edu}
-
-\maketitle
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Artifact Appendix for ACM CCS 2026 Paper #1938.
@@ -25,100 +21,114 @@
 
 \section{Artifact Appendix}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Abstract}
-
-This artifact reproduces the main results of \textsc{Coin}, a Modular
-Unsafe Function (MUF) detector and PoC generator for Rust:
-(C1)~the fine-tuned Llama~3.2-3B classifier achieves AUPRC\,$\approx$\,0.82
-on MUF detection;
-(C2)~the fine-tuned PoC generator produces valid PoCs for Modular Unsafe
-Functions detected in real-world crates;
-and (C3)~\textsc{Coin} substantially outperforms both vanilla open-source
-LLMs (Llama 3.2 3B, Llama 3.1 8B, Qwen3 4B) and closed-source GPT-4o /
-Claude-3.7 with few-shot prompting.
-The artifact ships:
-(i)~the Llama~3.2-3B LoRA \emph{classifier adapter} ($\approx$93\,MB),
-(ii)~the Llama~3.2-3B LoRA \emph{PoC generator adapter},
-(iii)~self-contained evaluation scripts in \texttt{code/} including
-baseline drivers for open-source models and OpenAI/Anthropic APIs,
-(iv)~five convenience launchers in \texttt{scripts/} (env setup,
-smoke test, full eval, PoC eval, baseline comparison), and
-(v)~a reassemblable sample test split and a starter few-shot file.
-Both adapters load on top of \texttt{unsloth/Llama-3.2-3B-bnb-4bit} from
-HuggingFace.
-The code is released under the MIT license; model weights follow the
-Llama~3.2 Community License.
+\textsc{Coin} is an LLM-based Modular Unsafe Function (MUF) detector and
+Proof-of-Concept generator for Rust. This artifact provides the
+fine-tuned models, evaluation scripts, and convenience launchers needed
+to reproduce the main results of the paper.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Description \& Requirements}
+\subsection{Repository}
 
-The top-level \texttt{README.md} and \texttt{ARTIFACT\_EVALUATION.md}
-are the primary entry points.
-\texttt{code/} contains the evaluation scripts
-(\texttt{eval\_repro.py} for the classifier, \texttt{gen\_poc.py} for
-PoC inference and evaluation), the optional re-training scripts
-(\texttt{train\_poc\_generator.py}), and reusability utilities
-(\texttt{infer\_batch.py}, \texttt{threshold.py}, \texttt{llm\_final.py},
-\texttt{unsafe\_collect.py}).
-\texttt{model/} contains the two LoRA adapters and \texttt{reassemble.sh}.
-\texttt{scripts/} contains numbered launchers that wrap the underlying
-Python commands with the correct environment variables.
-\texttt{data/} holds a sample test split; the full datasets are
-provided separately via the AE system.
+\textbf{GitHub:} \url{https://github.com/CXWorks/coin-ae}
 
-\subsubsection{Security, privacy, and ethical concerns}
+\noindent\textbf{Anonymous mirror:} \url{https://anonymous.4open.science/r/coin-ae-E308}
+
+\noindent A Zenodo archive with a permanent DOI will be created upon
+final paper acceptance.
+
+\noindent Clone with:
+\begin{verbatim}
+git clone https://github.com/CXWorks/coin-ae.git
+cd coin-ae && bash model/reassemble.sh
+\end{verbatim}
+
+The repository contains
+\texttt{model/} (LoRA adapters, split into \(\leq\)50\,MB parts for GitHub
+compatibility),
+\texttt{code/} (evaluation and inference scripts),
+\texttt{scripts/} (numbered launchers for each experiment),
+\texttt{data/} (a reassemblable sample test split and a starter few-shot
+file), \texttt{prompts/} (training/inference prompt templates), and
+\texttt{custom\_rustc\_patch/} (the \texttt{rustc 1.83.0-dev} patch used
+to extract safe-candidate functions).
+The full benchmark datasets (\texttt{coin\_test.pkl} --- 319,652 labeled
+functions, \texttt{poc\_test.jsonl}, and \texttt{poc\_train\_v2.jsonl})
+are submitted separately through the AE system due to size limits.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{System Requirements}
+
+\textbf{Operating system:} Linux x86\_64 (tested on Ubuntu~22.04).
+
+\noindent\textbf{GPU:} A single NVIDIA GPU with $\geq$24\,GB VRAM is
+sufficient for the smoke test (E1), PoC evaluation (E3), and the
+single-GPU full evaluation; CUDA Compute Capability $\geq$\,8.0
+(Ampere or newer) is recommended because \texttt{bitsandbytes} 4-bit
+quantization paths target that ISA.
+The fast 4-GPU sharded full evaluation (E2) needs four A100-class
+80\,GB GPUs; optional PoC re-training (E3) needs $\geq$48\,GB VRAM.
+All reported numbers were measured on NVIDIA A100-80\,GB.
+
+\noindent\textbf{CPU / RAM:} 8 CPU cores and 32\,GB RAM minimum
+(64\,GB recommended).
+
+\noindent\textbf{Disk:} 20\,GB minimum (50\,GB recommended) for the
+conda environment, base model cache, reassembled adapters, and
+intermediate evaluation outputs.
+
+\noindent\textbf{Network:} required during setup for HuggingFace
+model downloads and (optionally) E4 API calls; not required during
+the offline classifier and PoC experiments.
+
+\noindent\textbf{Rust toolchain (optional, E3):} stable + nightly with
+Miri, installed via \texttt{rustup}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Package Versions}
+
+The following pinned versions are installed automatically by
+\texttt{scripts/0\_setup\_env.sh}:
+
+\medskip
+\begin{tabular}{ll}
+\texttt{python}        & 3.11 \\
+\texttt{torch}         & 2.x (CUDA 12.1 build) \\
+\texttt{unsloth}       & \textbf{2025.2.15 (exact)} \\
+\texttt{transformers}  & \textbf{4.49.0 (exact)} \\
+\texttt{peft}          & 0.14.0 \\
+\texttt{trl}           & 0.15.2 \\
+\texttt{tokenizers}    & 0.21.0 \\
+\texttt{bitsandbytes}  & $\geq$0.43 \\
+\texttt{scikit-learn}  & latest \\
+\texttt{numpy, matplotlib, tqdm, rich} & latest \\
+\texttt{openai}        & $\geq$1.30 (E4 only) \\
+\texttt{anthropic}     & $\geq$0.30 (E4 only) \\
+\end{tabular}
+
+\medskip
+\textbf{Critical:} \texttt{unsloth==2025.2.15} and \texttt{transformers==4.49.0}
+must be used \emph{exactly}.
+Newer unsloth versions default to a shorter \texttt{max\_seq\_length} when
+the argument is omitted, silently truncating long Rust code snippets and
+dropping classifier AUPRC from $\approx$0.76 to $\approx$0.32. Do not
+upgrade these two pins.
+\texttt{eval\_repro.py} relies on this behavior to read
+\texttt{max\_seq\_length\,=\,8192} from the checkpoint config.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Security, Privacy, and Ethical Concerns}
 
 Evaluation scripts run read-only inference on the provided datasets.
 The PoC evaluation optionally invokes \texttt{cargo build} and
 \texttt{cargo +nightly miri run} on generated Rust code inside isolated
 \texttt{tempfile} directories; each invocation is short-lived and
-self-contained. No network access, persistent file modification, or
-elevated privileges are required. The PoCs are designed to trigger
-\emph{detected} undefined behavior under Miri, not to exploit any
-external system.
-
-\subsubsection{How to access}
-
-The artifact is available at the anonymous repository:
-\url{https://anonymous.4open.science/r/coin-ae-E308}.
-A Zenodo archive with a permanent DOI will be created upon paper acceptance.
-The full \texttt{coin\_test.pkl} (319,652 labeled functions) and
-\texttt{poc\_test.jsonl}/\texttt{poc\_train\_v2.jsonl} datasets are submitted
-separately through the AE system due to size constraints.
-
-\subsubsection{Hardware dependencies}
-
-A single NVIDIA GPU with $\geq$24\,GB VRAM suffices for E1, E3, and
-single-GPU E2. The full E2 run completes in $\approx$10\,hours on one
-A100-80\,GB, or $\approx$2.5\,hours on four such GPUs sharded.
-Optional PoC re-training requires $\geq$48\,GB VRAM.
-
-\subsubsection{Software dependencies}
-
-Pinned versions (installed automatically by \texttt{scripts/0\_setup\_env.sh}):
-\texttt{Python 3.11}, \texttt{unsloth==2025.2.15},
-\texttt{transformers==4.49.0}, \texttt{peft==0.14.0}, \texttt{trl==0.15.2},
-\texttt{tokenizers==0.21.0}, \texttt{scikit-learn}, \texttt{numpy},
-\texttt{matplotlib}, \texttt{tqdm}; CUDA~12.x.
-Newer unsloth versions default to a shorter \texttt{max\_seq\_length} when
-the argument is omitted, silently truncating Rust code snippets and dropping
-AUPRC from $\approx$0.76 to $\approx$0.32. Do not upgrade.
-For E3 compile/Miri metrics: Rust stable + nightly toolchain
-(\texttt{rustup component add miri --toolchain nightly}).
-
-\subsubsection{Benchmarks}
-
-\textbf{Classifier:} \texttt{coin\_test.pkl} --- 319,652 labeled Rust
-functions (97.4\% safe, 2.6\% unsafe) extracted from the top-10K
-crates on crates.io using a custom \texttt{rustc 1.83.0-dev} patch
-(included as \texttt{custom\_rustc\_patch/rustc.patch}). The test
-split is stratified and disjoint from training.
-\textbf{PoC generator:} \texttt{poc\_train\_v2.jsonl} --- $\approx$20
-manually constructed verified PoC examples per MUF category;
-\texttt{poc\_test.jsonl} --- held-out PoC examples for E3.
+self-contained. No persistent file modification or elevated privileges
+are required. The PoCs are designed to trigger \emph{detected}
+undefined behavior under Miri, not to exploit any external system.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -127,9 +137,10 @@ manually constructed verified PoC examples per MUF category;
 \subsubsection{Installation}
 
 \begin{compactenum}
-\item Reassemble split model files:
+\item Clone the repository (see \emph{Repository} above) and reassemble
+      split model files:\\
       \texttt{bash model/reassemble.sh}
-\item Create the conda environment and install pinned dependencies:
+\item Create the conda environment and install pinned dependencies:\\
       \texttt{bash scripts/0\_setup\_env.sh}
 \item Place \texttt{coin\_test.pkl} and \texttt{poc\_test.jsonl} at
       local paths.
@@ -147,8 +158,8 @@ CUDA_VISIBLE_DEVICES=0 \
   --n 500 --output /tmp/smoke.json
 \end{verbatim}
 Expected: a non-zero AUPRC printed and \texttt{/tmp/smoke.json} created.
-If \texttt{ImportError: bitsandbytes} appears, the launcher scripts
-set \texttt{LD\_LIBRARY\_PATH} correctly --- prefer those.
+If \texttt{ImportError: bitsandbytes} appears, the launcher scripts set
+\texttt{LD\_LIBRARY\_PATH} correctly --- prefer those.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
