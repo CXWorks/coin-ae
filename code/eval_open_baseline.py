@@ -115,22 +115,27 @@ def predict_unsafe_prob(model, tokenizer, prompts, yes_id, no_id,
 
     probs = [0.0] * len(prompts)
     buf = []
-    for k, i in enumerate(tqdm(order, desc="forward", file=sys.stderr)):
-        buf.append((i, enc[i]))
-        flush = ((k + 1) == len(order)) or (
-            len(buf) == batch_size
-            or (buf and buf[-1][1].shape[0] != enc[i].shape[0])
-        )
-        if not flush:
-            continue
-        ids = torch.stack([t for _, t in buf]).to(device)
+
+    def _flush(b):
+        if not b:
+            return
+        ids = torch.stack([t for _, t in b]).to(device)
         out = model(ids, use_cache=False)
-        logits = out.logits[:, -1, :]  # last-token logits
+        logits = out.logits[:, -1, :]
         last2 = torch.stack([logits[:, yes_id], logits[:, no_id]], dim=-1)
         p_yes = torch.softmax(last2, dim=-1)[:, 0]
-        for (orig_idx, _), p in zip(buf, p_yes.tolist()):
+        for (orig_idx, _), p in zip(b, p_yes.tolist()):
             probs[orig_idx] = float(p)
-        buf = []
+
+    for i in tqdm(order, desc="forward", file=sys.stderr):
+        cur_len = enc[i].shape[0]
+        # Flush before append when the run of same-length tensors ends
+        # or when the buffer is already full.
+        if buf and (buf[0][1].shape[0] != cur_len or len(buf) >= batch_size):
+            _flush(buf)
+            buf = []
+        buf.append((i, enc[i]))
+    _flush(buf)
     return probs
 
 
