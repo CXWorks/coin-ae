@@ -210,6 +210,12 @@ def main():
         json.dump(result, fh, indent=2)
     print(f"Saved to {args.output}")
 
+    # Sidecar pickle: per-sample (probs, labels) for downstream PR-curve plots.
+    sidecar = args.output.rsplit(".", 1)[0] + "_probs.pkl"
+    with open(sidecar, "wb") as fh:
+        pickle.dump((probs.tolist(), labels.tolist()), fh)
+    print(f"Probs sidecar: {sidecar}")
+
 
 if __name__ == "__main__":
     main()

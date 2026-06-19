@@ -319,6 +319,12 @@ bash scripts/4_baseline_eval.sh \
 \end{verbatim}
         The launcher iterates N\,$\in\,\{0,1,3,5\}$ (Table~2) and N=1
         with K\,$\in\,\{3,5\}$ (Table~3) for each provider.
+        To re-render the paper's Figure~2 (precision--recall overlay of
+        Coin against the open-source baselines), run instead
+        \texttt{bash scripts/5\_pr\_curves.sh /path/to/coin\_test.pkl} ---
+        this evaluates Coin and every vanilla open-source model on the
+        same sample, then writes \texttt{pr\_curves.png}/\texttt{.pdf}
+        with each model's AUPRC in the legend.
   \item[Results:] Per-config JSON files in \texttt{/tmp/coin\_baselines/}.
         Expected: vanilla open-source AUPRC $\approx$ 0.02--0.03
         (Fig.~2); GPT-4o precision/recall on the unsafe class

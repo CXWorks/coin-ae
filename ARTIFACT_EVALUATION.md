@@ -257,6 +257,51 @@ Llama models are gated on HuggingFace — set `HF_TOKEN` or run
 | Qwen3 4B (vanilla) | ~0.03 | 0.030 |
 | **Coin (Llama 3.2 3B, fine-tuned)** | **~0.75** (E1) | 0.822 |
 
+### 4.1.1 One-shot script: run all open-source models and draw Fig. 2
+
+`scripts/5_pr_curves.sh` evaluates Coin and every vanilla open-source
+baseline on the same stratified test sample, then renders a single
+precision–recall figure overlaying all curves (paper Figure 2).
+
+```bash
+bash scripts/5_pr_curves.sh /path/to/coin_test.pkl
+```
+
+Each per-model run pickles its `(probs, labels)` to
+`/tmp/coin_pr_curves/<model>_probs.pkl`; the plotter
+`code/draw_pr_curves.py` then reads every sidecar and writes both
+`pr_curves.png` and `pr_curves.pdf` to the same directory, plus a
+`summary.txt` listing each model's AUPRC.
+
+Environment overrides:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `N` | 8000 | stratified test sample size |
+| `GPU` | 0 | CUDA device index |
+| `OUT_DIR` | /tmp/coin_pr_curves | output directory |
+| `SKIP` | (none) | comma-separated substrings; skip matching HF IDs |
+
+Already-completed runs are cached by sidecar pickle, so re-running the
+script after adding a new model only evaluates the missing ones. To
+add a model, edit `run_open_baseline ... ` lines near the end of
+`scripts/5_pr_curves.sh`.
+
+To draw the figure from existing pickles without re-running any model:
+
+```bash
+./env/bin/python code/draw_pr_curves.py \
+  --inputs Coin:/tmp/coin_pr_curves/coin_probs.pkl \
+           'Llama 3.2 3B:/tmp/coin_pr_curves/open_llama32_3b_probs.pkl' \
+           'Llama 3.1 8B:/tmp/coin_pr_curves/open_llama31_8b_probs.pkl' \
+           'Qwen3 4B:/tmp/coin_pr_curves/open_qwen3_4b_probs.pkl' \
+  --output /tmp/coin_pr_curves/pr_curves.png
+```
+
+The plotter auto-detects per-sample pickle shapes (Coin's
+`(prob_safe, prob_unsafe)` pairs vs. the baselines' flat
+`prob_unsafe` arrays) and highlights Coin's curve in red/solid.
+
 ### 4.2 Closed-source API drivers (GPT-4o / Claude-3.7)
 
 `code/eval_api_baseline.py` is a provider-agnostic driver supporting

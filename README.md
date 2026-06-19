@@ -23,6 +23,7 @@ coin-ae/
 │   ├── gen_poc.py               # E3: PoC generator inference + evaluation
 │   ├── eval_open_baseline.py    # E4a: vanilla open-source LLM baselines
 │   ├── eval_api_baseline.py     # E4b: GPT-4o / Claude-3.7 driver (few-shot + Best-of-K)
+│   ├── draw_pr_curves.py        # Render Fig. 2: PR curves overlay from sidecar pickles
 │   ├── infer_batch.py           # Reusability: run classifier on a new crate
 │   ├── train_poc_generator.py   # Optional: re-train the PoC generator LoRA
 │   ├── threshold.py             # PAC-based threshold calibration
@@ -42,7 +43,8 @@ coin-ae/
     ├── 1_smoke_test.sh          # E1: 8K-sample classifier smoke test (~20 min)
     ├── 2_full_eval.sh           # E2: full 319K classifier eval (~2.5 h on 4 GPUs)
     ├── 3_poc_eval.sh            # E3: PoC generator evaluation
-    └── 4_baseline_eval.sh       # E4: open-source + API baselines
+    ├── 4_baseline_eval.sh       # E4: open-source + API baselines
+    └── 5_pr_curves.sh           # One-shot: run all models + draw Fig. 2 overlay
 ```
 
 ## Quick start
