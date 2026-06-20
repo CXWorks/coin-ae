@@ -12,19 +12,6 @@ This artifact reproduces the main results of the paper:
 
 See [ARTIFACT_EVALUATION.md](ARTIFACT_EVALUATION.md) for full step-by-step instructions.
 
-## Reproduced result (paper Fig. 2)
-
-![Precision-Recall on MUF detection](figures/pr_curves.png)
-
-| Model | This run (n=8000) | Paper Fig. 2 |
-|-------|-------------------|--------------|
-| **Coin (Llama 3.2 3B + LoRA)** | **AUPRC 0.7529** | 0.822 |
-| Llama 3.2 3B vanilla | AUPRC 0.0324 | 0.021 |
-| Qwen3 4B vanilla | AUPRC 0.0334 | 0.030 |
-
-Regenerate with `bash scripts/5_pr_curves.sh /path/to/coin_test.pkl`.
-Full run notes are in [figures/summary.txt](figures/summary.txt).
-
 ## Layout
 
 ```
@@ -94,5 +81,4 @@ provided separately via the AE submission system due to size.
 ## Citation / Archive
 
 - GitHub: <https://github.com/CXWorks/coin-ae>
-- Zenodo (archived release): <https://doi.org/10.5281/zenodo.20709620>
-- Anonymous mirror: <https://anonymous.4open.science/r/coin-ae-E308>
+- Zenodo (archived release): <https://doi.org/10.5281/zenodo.20709619>
