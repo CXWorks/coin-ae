@@ -1,0 +1,36 @@
+Reproduction run for paper Figure 2 (precision-recall, MUF detection)
+=====================================================================
+
+Test set : coin_test.pkl (319,652 functions; 97.4% safe, 2.6% unsafe)
+Sample   : n = 8000 stratified  (7794 safe, 206 unsafe; seed=42)
+Hardware : Quadro RTX 8000 48 GB; 3 GPUs in parallel
+Env      : conda env at /your/path/rustffi_old
+              Python 3.11, unsloth 2025.2.15, transformers 4.49.0
+           (Qwen3 4B required transformers 5.3.0 — different env;
+            Coin requires the pinned unsloth + transformers 4.49)
+Plotter  : code/draw_pr_curves.py
+Date     : 2026-06-19
+
+Model                        AUPRC        N     #pos
+---------------------------------------------------------
+Coin (Llama 3.2 3B + LoRA)  0.7529     8000      200
+Llama 3.2 3B vanilla        0.0324     8000      206
+Qwen3 4B vanilla            0.0334     8000      206
+
+Paper Fig. 2 (reference)
+---------------------------------------------------------
+Coin                        0.822
+Llama 3.2 3B vanilla        0.021
+Qwen3 4B vanilla            0.030
+Llama 3.1 8B vanilla        0.019    (not in this run; gated on HF)
+
+Notes
+-----
+* Qwen3 4B was run with --max_seq_length 4096 (vs 8192 for the others)
+  after an OOM at 90% completion in bf16 with 8192 ctx. The truncation
+  affects the longest ~10% of prompts but does not change the
+  order-of-magnitude AUPRC result.
+* Llama 3.1 8B is gated on HuggingFace; reviewers with an HF_TOKEN can
+  add it by appending the model id to scripts/5_pr_curves.sh.
+* Per-sample probabilities are not committed; rerun the launcher to
+  regenerate them, or call code/draw_pr_curves.py with your own pickles.

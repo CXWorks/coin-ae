@@ -263,6 +263,13 @@ Llama models are gated on HuggingFace — set `HF_TOKEN` or run
 baseline on the same stratified test sample, then renders a single
 precision–recall figure overlaying all curves (paper Figure 2).
 
+A pre-rendered version of this figure from our own run on n=8000 is
+checked in at [`figures/pr_curves.png`](figures/pr_curves.png) (PDF
+sibling: [`figures/pr_curves.pdf`](figures/pr_curves.pdf)). Reviewers
+can compare their re-rendered output to this reference; the AUPRC table
+and run conditions for the checked-in figure are in
+[`figures/summary.txt`](figures/summary.txt).
+
 ```bash
 bash scripts/5_pr_curves.sh /path/to/coin_test.pkl
 ```
