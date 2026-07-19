@@ -342,8 +342,10 @@ bash scripts/4_baseline_eval.sh \
 \subsection{Notes on Reusability}
 
 \texttt{code/infer\_batch.py} runs the classifier on any Rust crate
-directory and outputs a per-function CSV of MUF probabilities, enabling
-application to new codebases. \texttt{code/threshold.py} provides
+directory (\texttt{--crate\_dir}, \texttt{--model\_dir},
+\texttt{--output}, \texttt{--threshold}) and outputs a per-function CSV
+of MUF probabilities sorted by score, enabling application to new
+codebases. \texttt{code/threshold.py} provides
 PAC-based threshold calibration for specific
 precision/recall operating points. \texttt{code/gen\_poc.py --infer}
 accepts arbitrary MUF function text and category labels, allowing the

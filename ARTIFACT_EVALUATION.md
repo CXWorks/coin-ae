@@ -90,7 +90,23 @@ Substitute the actual paths for `/path/to/...` in the commands below.
 
 For smoke-testing **without the full data**, `data/coin_test.pkl.sample.part_*`
 can be reassembled (`cat data/coin_test.pkl.sample.part_* > data/coin_test.pkl.sample`)
-and passed to E1 with `--n 500` for a quick functional check.
+and passed to E1 with `--n 500` for a quick functional check
+(expect AUPRC ≈ 0.95: the sample is ~19% unsafe vs. 2.6% in the full
+set, and AUPRC rises with the positive rate).
+
+**Data format.** Both `coin_test.pkl` and the sample are a pickled dict
+`{"safe": [...], "unsafe": [...]}` whose entries are 4-tuples
+`(file_path, file_text, spans, windows)`:
+
+- `spans` — list of `(start_line, end_line)` (1-indexed, inclusive) for
+  each target function in the file;
+- `windows` — one `(win_start, win_end)` context window per span,
+  precomputed so the prompt fits the model context; `window == span`
+  is a sentinel meaning "use the whole file" (for short files).
+
+The sample is a stratified re-export of 1,000 safe + 1,000 unsafe file
+entries (16,954 functions) drawn directly from the full `coin_test.pkl`,
+so it uses the identical 4-tuple format.
 
 ---
 
@@ -372,12 +388,38 @@ the comparison is the order-of-magnitude precision gap vs. Coin.
 
 ```bash
 cd code
+CUDA_VISIBLE_DEVICES=0 \
+LD_LIBRARY_PATH=../env/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH \
 ../env/bin/python infer_batch.py \
   --crate_dir /path/to/rust/crate \
-  --model_dir ../model/llama3.2
+  --model_dir ../model/llama3.2 \
+  --output muf_predictions.csv
 ```
 
-Output: a CSV listing each candidate function with its predicted MUF probability.
+The tool scans `--crate_dir` for `.rs` files (skipping `tests/`,
+`examples/`, `benches/`, `target/`), extracts every function **not**
+declared `unsafe fn` (the MUF candidates) with a lightweight
+brace-matching scanner, windows each prompt to the model context using
+the same symmetric-expansion scheme as the training data, and scores
+each candidate with the classifier.
+
+Additional flags: `--threshold` (default 0.8, flagging cutoff),
+`--batch_size` (default 8), `--max_seq_length` (default 8192).
+
+Output: a CSV with columns `file, start_line, end_line, prob_muf,
+flagged`, sorted by predicted MUF probability (highest first).
+
+Example on a small data-structure crate (`ABtree 0.8.0`, 111 candidate
+functions, ~3 min including model load): 72 functions flagged — the
+crate's safe-declared AVL/B-tree helpers dereference raw `NonNull`
+pointers inside internal `unsafe` blocks (textbook MUFs) — while its
+purely safe traversal helpers score below 0.01. MUFs are not
+FFI-specific; any safe-declared function whose body performs unsafe
+operations is a candidate.
+
+> Note: candidate extraction here is toolchain-free by design. The
+> paper's data pipeline instead uses the rustc 1.83 patch in
+> `custom_rustc_patch/` for precise compiler-based extraction.
 
 ---
 

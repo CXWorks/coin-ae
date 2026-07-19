@@ -34,7 +34,7 @@ coin-ae/
 │   ├── llama3.2_poc/            # Fine-tuned PoC generator LoRA
 │   └── reassemble.sh            # Concatenate the .part_* files; run once
 ├── data/
-│   ├── coin_test.pkl.sample.*   # Reassemblable sample test split
+│   ├── coin_test.pkl.sample.*   # Reassemblable sample test split (same 4-tuple format as the full set)
 │   └── shots.jsonl              # Sample few-shot examples for E4b
 ├── prompts/                     # Prompt templates used during training/inference
 ├── custom_rustc_patch/          # rustc 1.83.0-dev patch for safe-candidate extraction
