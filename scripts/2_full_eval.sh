@@ -8,7 +8,7 @@
 
 set -e
 
-DATA="${1:-/path/to/coin_test.pkl}"
+DATA="${1:-data/coin_test.pkl}"
 ENV_PATH="${ENV_PATH:-./env}"
 NUM_SHARDS="${NUM_SHARDS:-4}"
 GPU_BASE="${GPU_BASE:-0}"   # first GPU index; uses GPU_BASE..GPU_BASE+NUM_SHARDS-1

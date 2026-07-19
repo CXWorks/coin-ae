@@ -34,9 +34,12 @@ coin-ae/
 │   ├── llama3.2_poc/            # Fine-tuned PoC generator LoRA
 │   └── reassemble.sh            # Concatenate the .part_* files; run once
 ├── data/
-│   ├── coin_test.pkl.sample.*   # Sample test split (same 4-tuple format as the full set)
-│   ├── reassemble.sh            # Concatenate the sample .part_* files; run once
-│   └── shots.jsonl              # Sample few-shot examples for E4b
+│   ├── coin_train.pkl.gz.*     # Full training split (compressed, split)
+│   ├── coin_valid.pkl.gz       # Full validation split (compressed)
+│   ├── coin_test.pkl.gz        # Full test split (compressed; 319,652 functions)
+│   ├── coin_test.pkl.sample.*  # Sample test split for smoke testing (same 4-tuple format)
+│   ├── reassemble.sh           # Reassemble/decompress all of the above; run once
+│   └── shots.jsonl             # Sample few-shot examples for E4b
 ├── prompts/                     # Prompt templates used during training/inference
 ├── custom_rustc_patch/          # rustc 1.83.0-dev patch for safe-candidate extraction
 └── scripts/
@@ -70,9 +73,12 @@ The setup script pins this; do not upgrade.
 
 ## Datasets
 
-The sample data under `data/` is for quick smoke-testing only. The full
-test sets (`coin_test.pkl`, `poc_train_v2.jsonl`, `poc_test.jsonl`) are
-provided separately via the AE submission system due to size.
+The full classifier splits ship in this repository as compressed part
+files: `bash data/reassemble.sh` produces `data/coin_train.pkl` (~700 MB),
+`data/coin_valid.pkl` (~230 MB), and `data/coin_test.pkl` (~230 MB,
+319,652 labeled functions), plus the small `coin_test.pkl.sample` for
+smoke testing. Only the PoC sets (`poc_train_v2.jsonl`, `poc_test.jsonl`)
+are provided separately via the AE submission system.
 
 ## Licenses
 

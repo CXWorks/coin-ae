@@ -6,7 +6,7 @@
 
 set -e
 
-DATA="${1:-/path/to/coin_test.pkl}"
+DATA="${1:-data/coin_test.pkl}"
 ENV_PATH="${ENV_PATH:-./env}"
 GPU="${CUDA_VISIBLE_DEVICES:-0}"
 OUT="${OUT:-/tmp/eval_smoke.json}"

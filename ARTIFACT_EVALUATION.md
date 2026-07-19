@@ -78,20 +78,28 @@ This creates `./env/` with the pinned package versions. To verify:
 
 ### 0.3 Obtain the test datasets
 
-The full datasets are provided via the AE submission system:
+The full train/valid/test splits ship **inside this repository** as
+compressed part files. Reassemble them once:
+
+```bash
+bash data/reassemble.sh
+```
+
+This produces (and format-checks):
 
 | File | Use | Size |
 |------|-----|------|
-| `coin_test.pkl` (319,652 labeled functions) | E1, E2 | ~120 MB |
-| `poc_test.jsonl` (held-out PoC examples) | E3 | <1 MB |
-| `poc_train_v2.jsonl` (verified training PoCs) | E3 re-train (optional) | <5 MB |
+| `data/coin_test.pkl` (319,652 labeled functions) | E1, E2 | ~230 MB |
+| `data/coin_valid.pkl` (validation split) | optional | ~230 MB |
+| `data/coin_train.pkl` (training split) | optional re-train | ~700 MB |
+| `data/coin_test.pkl.sample` (2,000 file entries) | smoke test | ~23 MB |
 
-Substitute the actual paths for `/path/to/...` in the commands below.
+Use `data/coin_test.pkl` wherever the commands below say
+`/path/to/coin_test.pkl`. (`poc_test.jsonl` and `poc_train_v2.jsonl`
+for E3 are still provided via the AE submission system.)
 
-For smoke-testing **without the full data**, reassemble the shipped
-sample with `bash data/reassemble.sh` (creates
-`data/coin_test.pkl.sample` and verifies its format) and pass it to E1
-with `--n 500` for a quick functional check
+For a fast functional check **before running the full data**, pass the
+sample to E1 with `--n 500`
 (expect AUPRC ≈ 0.95: the sample is ~19% unsafe vs. 2.6% in the full
 set, and AUPRC rises with the positive rate).
 
