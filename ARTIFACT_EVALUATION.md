@@ -88,9 +88,10 @@ The full datasets are provided via the AE submission system:
 
 Substitute the actual paths for `/path/to/...` in the commands below.
 
-For smoke-testing **without the full data**, `data/coin_test.pkl.sample.part_*`
-can be reassembled (`cat data/coin_test.pkl.sample.part_* > data/coin_test.pkl.sample`)
-and passed to E1 with `--n 500` for a quick functional check
+For smoke-testing **without the full data**, reassemble the shipped
+sample with `bash data/reassemble.sh` (creates
+`data/coin_test.pkl.sample` and verifies its format) and pass it to E1
+with `--n 500` for a quick functional check
 (expect AUPRC ≈ 0.95: the sample is ~19% unsafe vs. 2.6% in the full
 set, and AUPRC rises with the positive rate).
 

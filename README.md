@@ -34,7 +34,8 @@ coin-ae/
 │   ├── llama3.2_poc/            # Fine-tuned PoC generator LoRA
 │   └── reassemble.sh            # Concatenate the .part_* files; run once
 ├── data/
-│   ├── coin_test.pkl.sample.*   # Reassemblable sample test split (same 4-tuple format as the full set)
+│   ├── coin_test.pkl.sample.*   # Sample test split (same 4-tuple format as the full set)
+│   ├── reassemble.sh            # Concatenate the sample .part_* files; run once
 │   └── shots.jsonl              # Sample few-shot examples for E4b
 ├── prompts/                     # Prompt templates used during training/inference
 ├── custom_rustc_patch/          # rustc 1.83.0-dev patch for safe-candidate extraction
@@ -50,8 +51,9 @@ coin-ae/
 ## Quick start
 
 ```bash
-# 1. Reassemble split model files (one time)
+# 1. Reassemble split model and sample-data files (one time)
 bash model/reassemble.sh
+bash data/reassemble.sh
 
 # 2. Create the conda env (requires unsloth==2025.2.15)
 bash scripts/0_setup_env.sh
