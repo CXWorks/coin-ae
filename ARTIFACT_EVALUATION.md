@@ -23,7 +23,7 @@ The artifact contains:
 - Fine-tuned **Llama 3.2 3B PoC generator LoRA** at `model/llama3.2_poc/`
 - Self-contained evaluation scripts in `code/`
 - Convenience launchers in `scripts/`
-- Sample test data; full test sets via the AE submission system
+- All datasets needed for E1–E4, in `data/`
 
 ---
 
@@ -94,9 +94,16 @@ This produces (and format-checks):
 | `data/coin_train.pkl` (training split) | optional re-train | ~700 MB |
 | `data/coin_test.pkl.sample` (2,000 file entries) | smoke test | ~23 MB |
 
-Use `data/coin_test.pkl` wherever the commands below say
-`/path/to/coin_test.pkl`. (`poc_test.jsonl` and `poc_train_v2.jsonl`
-for E3 are still provided via the AE submission system.)
+The E3 PoC datasets ship uncompressed and need no reassembly:
+
+| File | Use | Size |
+|------|-----|------|
+| `data/poc_test.jsonl` (14 held-out PoC examples) | E3 | 15 KB |
+| `data/poc_train_v2.jsonl` (122 verified training PoCs) | E3 re-train (optional) | 330 KB |
+
+**No dataset needs to be downloaded from anywhere else** — everything
+required for E1–E4 is in this repository, and the scripts default to
+these in-repo paths.
 
 For a fast functional check **before running the full data**, pass the
 sample to E1 with `--n 500`
@@ -125,7 +132,7 @@ Verifies environment and model loading on an 8,000-example stratified
 sample. Supports claim (C1).
 
 ```bash
-bash scripts/1_smoke_test.sh /path/to/coin_test.pkl
+bash scripts/1_smoke_test.sh data/coin_test.pkl
 ```
 
 Or, equivalently:
@@ -135,7 +142,7 @@ CUDA_VISIBLE_DEVICES=0 \
 LD_LIBRARY_PATH=./env/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH \
   ./env/bin/python code/eval_repro.py \
   --checkpoint model/llama3.2 \
-  --data /path/to/coin_test.pkl \
+  --data data/coin_test.pkl \
   --n 8000 \
   --output /tmp/eval_smoke.json
 ```
@@ -159,7 +166,7 @@ Reproduces AUPRC on the complete 319,652-sample test set. Supports claim (C1).
 ### Option A: 4-GPU sharding (~2.5 hours)
 
 ```bash
-bash scripts/2_full_eval.sh /path/to/coin_test.pkl
+bash scripts/2_full_eval.sh data/coin_test.pkl
 ```
 
 This launches one shard per GPU (0–3 by default), waits for all four,
@@ -168,7 +175,7 @@ and prints aggregate AUPRC + precision-at-recall-0.8.
 ### Option B: Single GPU (~10 hours)
 
 ```bash
-NUM_SHARDS=1 bash scripts/2_full_eval.sh /path/to/coin_test.pkl
+NUM_SHARDS=1 bash scripts/2_full_eval.sh data/coin_test.pkl
 ```
 
 ### Expected results
@@ -188,7 +195,7 @@ Evaluates the fine-tuned PoC generator on a held-out PoC test set with
 three automated metrics. Supports claim (C2).
 
 ```bash
-bash scripts/3_poc_eval.sh /path/to/poc_test.jsonl
+bash scripts/3_poc_eval.sh data/poc_test.jsonl
 ```
 
 Or directly:
@@ -198,7 +205,7 @@ CUDA_VISIBLE_DEVICES=0 \
 LD_LIBRARY_PATH=./env/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH \
   ./env/bin/python code/gen_poc.py --eval \
   --model_dir model/llama3.2_poc \
-  --data /path/to/poc_test.jsonl \
+  --data data/poc_test.jsonl \
   --n 20 --output /tmp/poc_eval.json
 ```
 
@@ -221,8 +228,8 @@ If Cargo is unavailable, the script still reports `safe_caller`.
 ### Re-train the PoC generator from scratch (optional, ~3 h on one A100)
 
 ```bash
-TRAIN=1 TRAIN_DATA=/path/to/poc_train_v2.jsonl \
-  bash scripts/3_poc_eval.sh /path/to/poc_test.jsonl
+TRAIN=1 TRAIN_DATA=data/poc_train_v2.jsonl \
+  bash scripts/3_poc_eval.sh data/poc_test.jsonl
 ```
 
 This calls `code/train_poc_generator.py`, which uses unsloth+SFTTrainer
@@ -255,7 +262,7 @@ pass for each test prompt, and extracts the logits of the
 comparable to the Coin classifier's AUPRC.
 
 ```bash
-bash scripts/4_baseline_eval.sh /path/to/coin_test.pkl open
+bash scripts/4_baseline_eval.sh data/coin_test.pkl open
 ```
 
 Or one model at a time:
@@ -265,7 +272,7 @@ CUDA_VISIBLE_DEVICES=0 \
 LD_LIBRARY_PATH=./env/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH \
   ./env/bin/python code/eval_open_baseline.py \
   --model meta-llama/Llama-3.2-3B-Instruct \
-  --data /path/to/coin_test.pkl \
+  --data data/coin_test.pkl \
   --n 8000 \
   --output /tmp/baseline_llama32.json
 ```
@@ -296,7 +303,7 @@ and run conditions for the checked-in figure are in
 [`figures/summary.txt`](figures/summary.txt).
 
 ```bash
-bash scripts/5_pr_curves.sh /path/to/coin_test.pkl
+bash scripts/5_pr_curves.sh data/coin_test.pkl
 ```
 
 Each per-model run pickles its `(probs, labels)` to
@@ -344,7 +351,7 @@ queries (Table 3) are controlled by command-line flags.
 export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
 
-bash scripts/4_baseline_eval.sh /path/to/coin_test.pkl api
+bash scripts/4_baseline_eval.sh data/coin_test.pkl api
 ```
 
 The launcher iterates over the configurations in the paper:
@@ -357,7 +364,7 @@ For one configuration directly:
 ```bash
 ./env/bin/python code/eval_api_baseline.py \
   --provider openai --model gpt-4o \
-  --data /path/to/coin_test.pkl \
+  --data data/coin_test.pkl \
   --n 200 \
   --shots_file data/shots.jsonl --shots_n 3 \
   --best_of 1 \

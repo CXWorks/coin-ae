@@ -39,6 +39,8 @@ coin-ae/
 │   ├── coin_test.pkl.gz        # Full test split (compressed; 319,652 functions)
 │   ├── coin_test.pkl.sample.*  # Sample test split for smoke testing (same 4-tuple format)
 │   ├── reassemble.sh           # Reassemble/decompress all of the above; run once
+│   ├── poc_test.jsonl          # E3: held-out PoC test set (14 examples)
+│   ├── poc_train_v2.jsonl      # E3: verified PoC training set (122 examples)
 │   └── shots.jsonl             # Sample few-shot examples for E4b
 ├── prompts/                     # Prompt templates used during training/inference
 ├── custom_rustc_patch/          # rustc 1.83.0-dev patch for safe-candidate extraction
@@ -77,8 +79,10 @@ The full classifier splits ship in this repository as compressed part
 files: `bash data/reassemble.sh` produces `data/coin_train.pkl` (~700 MB),
 `data/coin_valid.pkl` (~230 MB), and `data/coin_test.pkl` (~230 MB,
 319,652 labeled functions), plus the small `coin_test.pkl.sample` for
-smoke testing. Only the PoC sets (`poc_train_v2.jsonl`, `poc_test.jsonl`)
-are provided separately via the AE submission system.
+smoke testing. The E3 PoC sets (`data/poc_test.jsonl`,
+`data/poc_train_v2.jsonl`) ship uncompressed and need no reassembly.
+Nothing has to be downloaded from anywhere else — every dataset needed
+for E1–E4 is in this repository, and the scripts default to these paths.
 
 ## Licenses
 

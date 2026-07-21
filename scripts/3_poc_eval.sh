@@ -3,20 +3,20 @@
 # Optionally re-trains the LoRA adapter from poc_train_v2.jsonl.
 #
 # Usage:
-#   bash scripts/3_poc_eval.sh /path/to/poc_test.jsonl              # eval shipped model
-#   TRAIN=1 bash scripts/3_poc_eval.sh /path/to/poc_test.jsonl      # train + eval
+#   bash scripts/3_poc_eval.sh data/poc_test.jsonl              # eval shipped model
+#   TRAIN=1 bash scripts/3_poc_eval.sh data/poc_test.jsonl      # train + eval
 
 set -e
 
-DATA="${1:-/path/to/poc_test.jsonl}"
+DATA="${1:-data/poc_test.jsonl}"
 ENV_PATH="${ENV_PATH:-./env}"
 GPU="${CUDA_VISIBLE_DEVICES:-0}"
 MODEL_DIR="${MODEL_DIR:-model/llama3.2_poc}"
-TRAIN_DATA="${TRAIN_DATA:-/path/to/poc_train_v2.jsonl}"
+TRAIN_DATA="${TRAIN_DATA:-data/poc_train_v2.jsonl}"
 
 if [ ! -f "$DATA" ]; then
     echo "Error: test data not found: $DATA"
-    echo "Usage: bash scripts/3_poc_eval.sh /path/to/poc_test.jsonl"
+    echo "Usage: bash scripts/3_poc_eval.sh data/poc_test.jsonl"
     exit 1
 fi
 

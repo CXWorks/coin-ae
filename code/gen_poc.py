@@ -16,7 +16,7 @@ Usage:
     # Batch evaluation: safe_caller / compiles / ub_detected
     python gen_poc.py --eval \
         --model_dir ../model/llama3.2_poc \
-        --data /path/to/poc_test.jsonl \
+        --data data/poc_test.jsonl \
         --n 20 --output /tmp/poc_eval.json
 
 Evaluation metrics (per generated PoC):
